@@ -2,14 +2,20 @@ import csv
 from typing import List
 from gcp.averaging import GCPPoint
 
+# Height is WGS84 ellipsoidal, as reported by the receiver, with the antenna
+# height already subtracted so it refers to the ground mark. It is NOT
+# orthometric/MSL - applying a geoid model is a separate step.
 CSV_HEADER = [
     "Point",
     "Latitude",
     "Longitude",
-    "Height",
+    "EllipsoidalHeight_WGS84",
+    "AntennaHeight",
+    "RawAntennaHeight",
     "HorizontalAccuracy",
     "VerticalAccuracy",
     "Fix",
+    "QualityOverride",
     "Satellites",
     "Time"
 ]

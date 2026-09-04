@@ -17,7 +17,7 @@ class CoordinatesCardWidget(QFrame):
         layout.setSpacing(12)
 
         # Title
-        header = QLabel("3. Live Coordinates & 4. Accuracy")
+        header = QLabel("4. Live Coordinates & 5. Accuracy")
         header.setObjectName("cardHeader")
         layout.addWidget(header)
 
@@ -85,6 +85,16 @@ class CoordinatesCardWidget(QFrame):
         lbl = QLabel(text)
         lbl.setObjectName("metricTitle")
         return lbl
+
+    def reset(self):
+        """Blanks every reading so stale values cannot be mistaken for live ones."""
+        self.lbl_lat.setText("—")
+        self.lbl_lon.setText("—")
+        self.lbl_alt.setText("—")
+        self.lbl_h_acc.setText("—")
+        self.lbl_v_acc.setText("—")
+        self.lbl_pdop.setText("—")
+        self.lbl_sats.setText("—")
 
     def update_gnss(self, data: GNSSData):
         if not data:

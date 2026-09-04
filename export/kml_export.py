@@ -14,6 +14,8 @@ def export_to_kml(file_path: str, points: List[GCPPoint]) -> bool:
         <b>H. Acc:</b> {p.h_accuracy} m<br/>
         <b>V. Acc:</b> {p.v_accuracy} m<br/>
         <b>Satellites:</b> {p.satellites}<br/>
+        <b>Antenna Height:</b> {p.antenna_height:.3f} m (removed)<br/>
+        <b>Height datum:</b> WGS84 ellipsoidal<br/>
         <b>Time:</b> {p.timestamp.strftime('%Y-%m-%d %H:%M:%S')}
       ]]></description>
       <Point>

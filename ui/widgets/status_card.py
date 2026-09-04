@@ -16,7 +16,7 @@ class StatusCardWidget(QFrame):
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
 
-        header = QLabel("2. Receiver Information")
+        header = QLabel("3. Receiver Information")
         header.setObjectName("cardHeader")
         layout.addWidget(header)
 
@@ -78,6 +78,12 @@ class StatusCardWidget(QFrame):
             self.lbl_badge.setObjectName("rtkBadgeNoFix")
 
         # Re-apply CSS selector stylesheet
+        self.lbl_badge.setStyle(self.lbl_badge.style())
+
+    def reset(self):
+        """Clears the RTK badge back to No Fix when the stream is not live."""
+        self.lbl_badge.setText("○ No Fix")
+        self.lbl_badge.setObjectName("rtkBadgeNoFix")
         self.lbl_badge.setStyle(self.lbl_badge.style())
 
     def set_connection_state(self, connected: bool):

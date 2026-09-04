@@ -1,3 +1,4 @@
+import queue
 import time
 from PySide6.QtCore import QThread, Signal
 import serial
@@ -16,6 +17,7 @@ class SerialReaderThread(QThread):
     gnss_updated = Signal(object)        # Emits GNSSData
     connection_changed = Signal(bool, str) # Emits (is_connected, port_name)
     error_occurred = Signal(str)         # Emits error message
+    gga_available = Signal(str)          # Emits raw $..GGA sentences (for NTRIP VRS uplink)
 
     def __init__(self, port: str = MOCK_PORT_NAME, baudrate: int = 38400, parent=None):
         super().__init__(parent)
@@ -23,6 +25,9 @@ class SerialReaderThread(QThread):
         self.baudrate = baudrate
         self.running = False
         self.parser = NMEAParser()
+        # RTCM corrections arrive on the NTRIP thread but must be written from this
+        # one, so they are handed over through a queue rather than touching the port.
+        self._rtcm_queue: queue.Queue = queue.Queue(maxsize=256)
 
     @staticmethod
     def get_available_ports() -> list[str]:
@@ -66,6 +71,35 @@ class SerialReaderThread(QThread):
         self.running = False
         self.wait(1000)
 
+    def write_rtcm(self, data: bytes):
+        """Queues RTCM correction bytes to be written to the receiver.
+
+        Safe to call from another thread. Drops the oldest data when the receiver
+        cannot keep up, since stale corrections are worthless anyway.
+        """
+        if not data or not self.running:
+            return
+        try:
+            self._rtcm_queue.put_nowait(data)
+        except queue.Full:
+            try:
+                self._rtcm_queue.get_nowait()
+                self._rtcm_queue.put_nowait(data)
+            except queue.Empty:
+                pass
+
+    def _drain_rtcm(self, ser):
+        """Writes any queued corrections out to the receiver."""
+        while True:
+            try:
+                chunk = self._rtcm_queue.get_nowait()
+            except queue.Empty:
+                return
+            try:
+                ser.write(chunk)
+            except serial.SerialException:
+                return
+
     def _run_mock_loop(self):
         mock_gen = MockGNSSGenerator()
         self.connection_changed.emit(True, MOCK_PORT_NAME)
@@ -85,9 +119,13 @@ class SerialReaderThread(QThread):
             self.connection_changed.emit(True, self.port)
 
             while self.running:
+                self._drain_rtcm(ser)
+
                 if ser.in_waiting:
                     line = ser.readline().decode('ascii', errors='ignore')
                     if line:
+                        if 'GGA' in line[:7]:
+                            self.gga_available.emit(line)
                         gnss_data = self.parser.parse_line(line)
                         self.gnss_updated.emit(gnss_data)
                 else:

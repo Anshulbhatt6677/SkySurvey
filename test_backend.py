@@ -2,6 +2,7 @@ from gps.nmea_parser import NMEAParser
 from gps.mock_gnss import MockGNSSGenerator
 from gcp.averaging import GCPAverager, GCPPoint
 from gcp.logger import GCPLogger
+import tempfile, os
 from export.csv_export import export_to_csv
 from export.kml_export import export_to_kml
 
@@ -24,7 +25,8 @@ averaged_point = averager.compute_average()
 print("Averaged Point:", averaged_point)
 
 print("\n=== 3. Testing GCP Logger & Next ID ===")
-logger = GCPLogger()
+# Isolated session file: tests must never write into real field data.
+logger = GCPLogger(session_path=os.path.join(tempfile.mkdtemp(), 'test_session.json'))
 logger.add_point(averaged_point)
 print("Points in Logger:", len(logger.get_points()))
 print("Next Point ID:", logger.get_next_point_id())
